@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tide OS</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--win:#eef1f4;--win-t:#dde3e9;--ink:#15202b;--mute:#5b6b7a;--acc:#f2a33a;--bar:rgba(12,22,32,.82);--line:#c5cdd5;--wall:linear-gradient(135deg,#12303f,#1f6f78 55%,#3b9a8f);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--win:#1d2832;--win-t:#2a3743;--ink:#e8eef3;--mute:#94a5b4;--line:#3a4854}}
+:root[data-theme="dark"]{--win:#1d2832;--win-t:#2a3743;--ink:#e8eef3;--mute:#94a5b4;--line:#3a4854}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:#12303f}
+#desk{position:fixed;inset:0;background:var(--wall);background-size:cover;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 60px}
+.ico{width:84px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff;padding:8px 4px;border-radius:8px;cursor:pointer;font-size:12px;user-select:none;margin-bottom:6px;background:none;border:0;font-family:inherit}
+.ico:hover,.ico:focus-visible{background:rgba(255,255,255,.14);outline:none}
+.ico i{font-style:normal;font-size:30px;width:52px;height:52px;display:grid;place-items:center;background:rgba(255,255,255,.16);border-radius:12px}
+.win{position:absolute;display:flex;flex-direction:column;background:var(--win);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:hidden;min-width:260px;min-height:160px;max-width:100vw}
+.win.max{inset:0 0 46px 0!important;width:auto!important;height:auto!important;border-radius:0}
+.win.min{display:none}
+.tb{display:flex;align-items:center;gap:6px;padding:7px 8px 7px 12px;background:var(--win-t);cursor:grab;user-select:none;touch-action:none;font-weight:500;font-size:13px}
+.tb span{flex:1}
+.tb button{width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font-size:14px}
+.tb button:hover{background:var(--line)}
+.tb button.x:hover{background:#d8513f;color:#fff}
+.body{flex:1;overflow:auto;min-height:0;display:flex;flex-direction:column}
+.rs{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 55%,var(--mute) 55%,var(--mute) 62%,transparent 62%,transparent 75%,var(--mute) 75%,var(--mute) 82%,transparent 82%)}
+#bar{position:fixed;left:0;right:0;bottom:0;height:calc(46px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bar);backdrop-filter:blur(14px);display:flex;align-items:center;gap:6px;padding-left:8px;padding-right:12px;z-index:9999;color:#fff}
+#start{background:var(--acc);color:#1a1206;border:0;border-radius:8px;height:32px;padding:0 14px;font-weight:600;font-family:inherit;cursor:pointer}
+#tasks{flex:1;display:flex;gap:6px;overflow:hidden}
+.task{background:rgba(255,255,255,.1);color:#fff;border:0;border-bottom:2px solid transparent;border-radius:6px;height:32px;padding:0 12px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.task.on{border-bottom-color:var(--acc);background:rgba(255,255,255,.2)}
+#clock{font-size:12px;text-align:right;line-height:1.2}
+#menu{position:fixed;left:8px;bottom:calc(54px + env(safe-area-inset-bottom,0px));width:230px;background:var(--bar);backdrop-filter:blur(16px);border-radius:12px;padding:8px;z-index:9999;display:none;color:#fff}
+#menu.open{display:block}
+#menu button{display:flex;gap:10px;width:100%;align-items:center;background:none;border:0;color:#fff;padding:9px 10px;border-radius:8px;font:inherit;cursor:pointer;text-align:left}
+#menu button:hover{background:rgba(255,255,255,.14)}
+/* apps */
+.term{background:#0d151c;color:#c9f0e6;font:13px/1.5 'IBM Plex Mono',monospace;padding:10px;flex:1;overflow:auto;white-space:pre-wrap}
+.term .in{display:flex;gap:6px}.term input{flex:1;background:none;border:0;color:inherit;font:inherit;outline:none}
+textarea.note{flex:1;border:0;resize:none;padding:12px;background:var(--win);color:var(--ink);font:14px/1.6 'IBM Plex Sans',sans-serif;outline:none}
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px;flex:1}
+.calc output{grid-column:1/5;background:var(--win-t);border-radius:8px;padding:10px 12px;text-align:right;font:500 24px 'IBM Plex Mono',monospace;overflow:hidden}
+.calc button{border:0;border-radius:8px;background:var(--win-t);color:var(--ink);font:500 17px inherit;cursor:pointer}
+.calc button.op{background:var(--acc);color:#1a1206}
+.set{padding:16px;display:flex;flex-direction:column;gap:14px;font-size:14px}
+.set .sw{display:flex;gap:10px;flex-wrap:wrap}
+.set .sw button{width:56px;height:38px;border-radius:8px;border:2px solid var(--line);cursor:pointer}
+.set .sw button.pill{width:auto;padding:0 14px;background:var(--win-t);color:var(--ink);font:inherit}
+.paint{display:flex;gap:8px;padding:8px;align-items:center;border-bottom:1px solid var(--line)}
+.paint button{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
+.paint .clr{width:auto;border-radius:6px;padding:2px 10px;background:var(--win-t);color:var(--ink);font:inherit;font-size:12px}
+canvas{flex:1;width:100%;background:#fff;touch-action:none;cursor:crosshair}
+.files{padding:10px}.files div{padding:8px 10px;border-radius:6px;display:flex;justify-content:space-between;cursor:pointer;font-size:14px}.files div:hover{background:var(--win-t)}.files small{color:var(--mute)}
+.f{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--win);color:var(--ink);font:inherit}
+.msg{min-height:18px;font-size:12px;color:var(--mute)}
+.wb{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mute)}
+.wb span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wb a{color:var(--ink);font-weight:500;white-space:nowrap}
+iframe.wf{flex:1;width:100%;border:0;background:#fff}
+.row{display:flex;align-items:center;gap:6px;padding:4px 0}.row span{flex:1}
+.row button{padding:4px 10px;border-radius:6px;border:0;background:var(--win-t);color:var(--ink);font:inherit;font-size:12px;cursor:pointer}
+#menu{max-height:60vh;overflow:auto}
+.ico{position:absolute;margin:0;height:90px;pointer-events:auto;line-height:1.15;text-align:center;word-break:break-word;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+.ico.drag{opacity:.85;cursor:grabbing}
+body.edit .ico{outline:2px dashed rgba(255,255,255,.6);cursor:grab;touch-action:none}
+.ico .rm{display:none;position:absolute;top:-6px;right:-2px;width:20px;height:20px;border-radius:50%;background:#d8513f;color:#fff;place-items:center;font-size:14px;line-height:1;cursor:pointer;text-shadow:none}
+body.edit .ico .rm{display:grid}
+#editbar{position:fixed;left:8px;right:8px;bottom:calc(54px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--bar);backdrop-filter:blur(14px);color:#fff;z-index:9998;font-size:13px}
+#editbar button{border:0;border-radius:8px;padding:6px 12px;background:rgba(255,255,255,.16);color:#fff;font:inherit;cursor:pointer}
+#editbar button.done{background:var(--acc);color:#1a1206;font-weight:600}
+</style>
+</head>
+<body>
+<div id="desk"></div>
+<div id="menu"></div>
+<div id="bar"><button id="start" aria-label="Open start menu">Tide</button><div id="tasks"></div><div id="clock"></div></div>
+<script>
+const $=(s,e=document)=>e.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let z=10,n=0;const wins=[];
+const walls={Lagoon:'linear-gradient(135deg,#12303f,#1f6f78 55%,#3b9a8f)',Dusk:'linear-gradient(135deg,#2b1b3d,#7a3b69 60%,#e08a5b)',Graphite:'linear-gradient(135deg,#1b2126,#39444d)',Moss:'linear-gradient(135deg,#1e2b1c,#4d6b3a 70%,#a3b35c)'};
+function setWall(w){const d=$('#desk');
+ d.style.background=w.t==='i'?`center/cover no-repeat url("${w.d}")`:w.t==='g'?`linear-gradient(135deg,${w.a},${w.b})`:(walls[w.k]||walls.Lagoon);
+ try{localStorage.setItem('tide.wp',JSON.stringify(w));return true}catch(e){return false}}
+function applyTheme(t){if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=t;store.set('tide.theme',t)}
+
+const apps={
+Terminal:{ic:'⌨',w:480,h:320,mk(b){
+ b.innerHTML='<div class="term"><div class="log">Tide OS terminal. Type <b>help</b> to list commands.\n</div><div class="in"><span>$</span><input aria-label="Command" autofocus></div></div>';
+ const t=$('.term',b),log=$('.log',b),inp=$('input',b);
+ const out=s=>{log.textContent+=s+'\n';t.scrollTop=t.scrollHeight};
+ const cmds={help:()=>'help  date  echo  open <app>  apps  clear  whoami  theme <light|dark|auto>',date:()=>new Date().toString(),whoami:()=>'guest@tide',apps:()=>Object.keys(apps).join('  '),
+ echo:a=>a.join(' '),clear:()=>{log.textContent='';return ''},open:a=>{const k=Object.keys(apps).find(x=>x.toLowerCase()===(a[0]||'').toLowerCase());if(!k)return 'No app named "'+(a[0]||'')+'". Run apps to list them.';openApp(k);return 'Opened '+k},
+ theme:a=>['light','dark','auto'].includes(a[0])?(applyTheme(a[0]),'Theme set to '+a[0]):'Use: theme light, dark or auto'};
+ inp.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=inp.value.trim();inp.value='';out('$ '+v);if(!v)return;const [c,...a]=v.split(/\s+/);const r=cmds[c]?cmds[c](a):'Unknown command "'+c+'". Type help.';if(r)out(r)});
+ b.addEventListener('click',()=>inp.focus())}},
+Notes:{ic:'✎',w:420,h:340,mk(b){const t=document.createElement('textarea');t.className='note';t.placeholder='Start typing. Notes save automatically.';t.value=store.get('tide.note','');t.oninput=()=>store.set('tide.note',t.value);b.append(t)}},
+Calculator:{ic:'∑',w:290,h:400,mk(b){
+ const d=document.createElement('div');d.className='calc';d.innerHTML='<output>0</output>';b.append(d);const o=$('output',d);let s='';
+ '7 8 9 ÷ 4 5 6 × 1 2 3 − 0 . C +'.split(' ').forEach(k=>{const e=document.createElement('button');e.textContent=k;if('÷×−+'.includes(k))e.className='op';e.onclick=()=>{if(k==='C')s='';else s+=k;o.textContent=s||'0'};d.append(e)});
+ const eq=document.createElement('button');eq.textContent='=';eq.className='op';eq.style.gridColumn='1/5';eq.onclick=()=>{try{const r=Function('"use strict";return ('+s.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-').replace(/[^0-9+\-*/.()]/g,'')+')')();s=String(+(+r).toFixed(10));o.textContent=s}catch(e){s='';o.textContent='Check the expression'}};d.append(eq)}},
+Paint:{ic:'✐',w:460,h:360,mk(b){
+ const bar=document.createElement('div');bar.className='paint';const c=document.createElement('canvas');b.append(bar,c);
+ let col='#15202b';['#15202b','#d8513f','#f2a33a','#3b9a8f','#3b6fd8'].forEach(k=>{const e=document.createElement('button');e.style.background=k;e.setAttribute('aria-label','Colour '+k);e.onclick=()=>col=k;bar.append(e)});
+ const cl=document.createElement('button');cl.className='clr';cl.textContent='Clear';bar.append(cl);
+ const x=c.getContext('2d');const fit=()=>{const img=x.getImageData(0,0,c.width,c.height);c.width=c.clientWidth;c.height=c.clientHeight;x.lineWidth=3;x.lineCap='round';x.putImageData(img,0,0)};
+ new ResizeObserver(fit).observe(c);cl.onclick=()=>x.clearRect(0,0,c.width,c.height);
+ let dr=false;const p=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ c.onpointerdown=e=>{dr=true;c.setPointerCapture(e.pointerId);x.strokeStyle=col;x.beginPath();x.moveTo(...p(e))};
+ c.onpointermove=e=>{if(dr){x.lineTo(...p(e));x.stroke()}};c.onpointerup=()=>dr=false}},
+Files:{ic:'▤',w:380,h:300,mk(b){
+ const f=[['Notes','opens the Notes app','Notes'],['Calculator','opens the Calculator','Calculator'],['Sketches','opens Paint','Paint'],['Terminal','opens the Terminal','Terminal']];
+ const d=document.createElement('div');d.className='files';f.forEach(([a,s,app])=>{const r=document.createElement('div');r.innerHTML='<span>'+a+'</span><small>'+s+'</small>';r.ondblclick=r.onclick=()=>openApp(app);d.append(r)});b.append(d)}},
+Settings:{ic:'⚙',w:380,h:480,mk(b){
+ const d=document.createElement('div');d.className='set';d.innerHTML='<div><b>Wallpaper</b></div><div class="sw wall"></div><div class="sw"><button class="pill up">Upload image</button><input type="file" accept="image/*" hidden class="file"></div><div class="sw" style="align-items:center"><label>Colours <input type="color" class="c1" value="#12303f"> <input type="color" class="c2" value="#3b9a8f"></label><button class="pill gr">Apply gradient</button></div><div class="msg wm" role="status"></div><div><b>Appearance</b></div><div class="sw th"></div><div><b>Home screen</b></div><div class="sw"><button class="pill eh">Edit home screen</button></div>';b.append(d);
+ Object.entries(walls).forEach(([k,v])=>{const e=document.createElement('button');e.style.background=v;e.title=k;e.setAttribute('aria-label',k+' wallpaper');e.onclick=()=>setWall({t:'p',k});$('.wall',d).append(e)});
+ const wm=$('.wm',d),fi=$('.file',d);
+ $('.up',d).onclick=()=>fi.click();
+ fi.onchange=()=>{const f=fi.files[0];if(!f)return;if(!f.type.startsWith('image/')){wm.textContent='Choose an image file.';return}
+  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,1920/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+   const ok=setWall({t:'i',d:c.toDataURL('image/jpeg',.82)});wm.textContent=ok?'Wallpaper set.':'Wallpaper set for this session. It was too large to save.'};im.onerror=()=>wm.textContent='That image could not be read.';im.src=r.result};r.readAsDataURL(f);fi.value=''};
+ $('.gr',d).onclick=()=>{setWall({t:'g',a:$('.c1',d).value,b:$('.c2',d).value});wm.textContent='Gradient applied.'};
+ $('.eh',d).onclick=()=>setEdit(true);
+ ['auto','light','dark'].forEach(t=>{const e=document.createElement('button');e.className='pill';e.textContent=t[0].toUpperCase()+t.slice(1);e.onclick=()=>applyTheme(t);$('.th',d).append(e)})}},
+'Web Apps':{ic:'⊕',w:380,h:500,mk(b){
+ const d=document.createElement('div');d.className='set';
+ d.innerHTML='<div><b>Add a web app</b></div><input class="f n" placeholder="Name, e.g. Excalidraw" aria-label="Name"><input class="f u" placeholder="Address, e.g. excalidraw.com" aria-label="Address"><input class="f i" placeholder="Icon (optional emoji)" maxlength="4" aria-label="Icon"><div class="sw"><button class="pill add">Add app</button></div><div class="msg" role="status"></div><div><b>Your web apps</b></div><div class="list"></div><div><b>Suggestions</b></div><div class="sw sug"></div>';
+ b.append(d);
+ const q=s=>$(s,d),list=q('.list');
+ const render=()=>{list.innerHTML='';const l=webList();if(!l.length)list.textContent='None yet. Add one above.';l.forEach(it=>{const r=document.createElement('div');r.className='row';const s=document.createElement('span');s.textContent=it.ic+' '+it.name;const o=document.createElement('button');o.textContent='Open';o.onclick=()=>openApp(it.name);const x=document.createElement('button');x.textContent='Remove';x.onclick=()=>{removeWeb(it.name);render()};r.append(s,o,x);list.append(r)})};
+ const add=(name,url,ic)=>{const m=addWeb({name,url,ic});q('.msg').textContent=m||'Added '+name+'. It is on your desktop and in the Tide menu.';if(!m){render();['.n','.u','.i'].forEach(c=>q(c).value='')}};
+ q('.add').onclick=()=>add(q('.n').value,q('.u').value,q('.i').value);
+ [['Excalidraw','excalidraw.com','✏'],['OpenStreetMap','openstreetmap.org','🗺'],['Wikipedia','en.m.wikipedia.org','📖']].forEach(([n,u,i])=>{const e=document.createElement('button');e.className='pill';e.textContent=i+' '+n;e.onclick=()=>add(n,u,i);q('.sug').append(e)});
+ render()}}
+};
+
+function focusWin(w){w.el.style.zIndex=++z;wins.forEach(x=>x.task.classList.toggle('on',x===w&&!x.el.classList.contains('min')))}
+function openApp(name){
+ const a=apps[name],id=++n,el=document.createElement('div');el.className='win';
+ const vw=innerWidth,vh=innerHeight-46;const W=Math.min(a.w,vw-16),H=Math.min(a.h,vh-16);
+ el.style.cssText=`width:${W}px;height:${H}px;left:${Math.max(8,Math.min(vw-W-8,110+(id%6)*32))}px;top:${Math.max(8,Math.min(vh-H-8,50+(id%6)*28))}px`;
+ el.innerHTML=`<div class="tb"><span>${a.ic} ${name}</span><button aria-label="Minimise">–</button><button aria-label="Maximise">▢</button><button class="x" aria-label="Close">✕</button></div><div class="body"></div><div class="rs"></div>`;
+ $('#desk').append(el);a.mk($('.body',el));
+ const task=document.createElement('button');task.className='task';task.textContent=name;$('#tasks').append(task);
+ const w={el,task};wins.push(w);
+ const [bm,bx,bc]=el.querySelectorAll('.tb button');
+ const min=()=>{el.classList.add('min');task.classList.remove('on')};
+ bm.onclick=min;bx.onclick=()=>el.classList.toggle('max');
+ bc.onclick=()=>{el.remove();task.remove();wins.splice(wins.indexOf(w),1)};
+ task.onclick=()=>{if(el.classList.contains('min')){el.classList.remove('min');focusWin(w)}else if(task.classList.contains('on'))min();else focusWin(w)};
+ el.addEventListener('pointerdown',()=>focusWin(w));
+ const tb=$('.tb',el);
+ tb.onpointerdown=e=>{if(e.target.closest('button')||el.classList.contains('max'))return;const sx=e.clientX-el.offsetLeft,sy=e.clientY-el.offsetTop;tb.setPointerCapture(e.pointerId);tb.style.cursor='grabbing';
+  tb.onpointermove=m=>{el.style.left=Math.max(-el.offsetWidth+80,Math.min(innerWidth-80,m.clientX-sx))+'px';el.style.top=Math.max(0,Math.min(innerHeight-90,m.clientY-sy))+'px'};
+  tb.onpointerup=()=>{tb.onpointermove=null;tb.style.cursor=''}};
+ tb.ondblclick=e=>{if(!e.target.closest('button'))el.classList.toggle('max')};
+ const rs=$('.rs',el);
+ rs.onpointerdown=e=>{e.stopPropagation();rs.setPointerCapture(e.pointerId);const sw=el.offsetWidth,sh=el.offsetHeight,sx=e.clientX,sy=e.clientY;
+  rs.onpointermove=m=>{el.style.width=Math.max(260,sw+m.clientX-sx)+'px';el.style.height=Math.max(160,sh+m.clientY-sy)+'px'};rs.onpointerup=()=>rs.onpointermove=null};
+ if(editing)setEdit(false);focusWin(w);$('#menu').classList.remove('open')}
+
+// desktop icons + start menu
+const deskIcons=document.createElement('div');deskIcons.style.cssText='position:absolute;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);pointer-events:none';
+let editing=false;const CW=92,CH=92,PAD=14;
+const jget=(k,d)=>{try{return JSON.parse(store.get(k,''))||d}catch(e){return d}};
+let layout=jget('tide.layout',{}),hidden=jget('tide.hidden',[]);
+const saveLayout=()=>{store.set('tide.layout',JSON.stringify(layout));store.set('tide.hidden',JSON.stringify(hidden))};
+const rowsN=()=>Math.max(1,Math.floor((innerHeight-46-PAD)/CH));
+const occ=(c,r,ex)=>Object.keys(layout).find(n=>n!==ex&&apps[n]&&!hidden.includes(n)&&layout[n].c===c&&layout[n].r===r);
+function freeCell(ex){const R=rowsN();for(let c=0;;c++)for(let r=0;r<R;r++)if(!occ(c,r,ex))return{c,r}}
+function layoutIcon(b,k){if(!layout[k])layout[k]=freeCell(k);b.style.display=hidden.includes(k)?'none':'';b.style.left=PAD+layout[k].c*CW+'px';b.style.top=PAD+layout[k].r*CH+'px'}
+function relayout(){Object.keys(apps).forEach(n=>{const a=apps[n];if(a.els)layoutIcon(a.els[0],n)})}
+function dragify(b,k){
+ const x=document.createElement('span');x.className='rm';x.textContent='−';x.setAttribute('aria-label','Hide '+k);
+ x.onpointerdown=e=>e.stopPropagation();
+ x.onclick=e=>{e.stopPropagation();hidden.push(k);saveLayout();layoutIcon(b,k);renderEditBar()};b.append(x);
+ b.onpointerdown=e=>{if(!editing)return;e.preventDefault();b.setPointerCapture(e.pointerId);
+  const ox=e.clientX-b.offsetLeft,oy=e.clientY-b.offsetTop;b.style.zIndex=5;b.classList.add('drag');
+  b.onpointermove=m=>{b.style.left=m.clientX-ox+'px';b.style.top=m.clientY-oy+'px'};
+  b.onpointerup=()=>{b.onpointermove=b.onpointerup=null;b.style.zIndex='';b.classList.remove('drag');
+   const maxC=Math.max(0,Math.floor((innerWidth-PAD)/CW)-1);
+   const c=Math.max(0,Math.min(maxC,Math.round((b.offsetLeft-PAD)/CW))),r=Math.max(0,Math.min(rowsN()-1,Math.round((b.offsetTop-PAD)/CH)));
+   const old=layout[k],o=occ(c,r,k);if(o)layout[o]=old;layout[k]={c,r};saveLayout();relayout()}}}
+function renderEditBar(){const e=$('#editbar');e.innerHTML='';
+ const hid=hidden.filter(n=>apps[n]);
+ const t=document.createElement('span');t.textContent=hid.length?'Hidden icons. Tap one to bring it back:':'Drag icons to move them. Tap − to hide one.';e.append(t);
+ hid.forEach(n=>{const c=document.createElement('button');c.textContent=apps[n].ic+' '+n;c.onclick=()=>{hidden=hidden.filter(x=>x!==n);const L=layout[n];if(!L||occ(L.c,L.r,n))layout[n]=freeCell(n);saveLayout();relayout();renderEditBar()};e.append(c)});
+ const sp=document.createElement('span');sp.style.flex='1';e.append(sp);
+ const rs=document.createElement('button');rs.textContent='Reset layout';rs.onclick=()=>{layout={};hidden=[];Object.keys(apps).forEach(n=>{layout[n]=freeCell(n)});saveLayout();relayout();renderEditBar()};
+ const dn=document.createElement('button');dn.className='done';dn.textContent='Done';dn.onclick=()=>setEdit(false);e.append(rs,dn)}
+function setEdit(on){editing=on;document.body.classList.toggle('edit',on);$('#editbar').style.display=on?'flex':'none';
+ if(on){wins.forEach(w=>{w.el.classList.add('min');w.task.classList.remove('on')});$('#menu').classList.remove('open');renderEditBar()}}
+const eb=document.createElement('div');eb.id='editbar';document.body.append(eb);
+const deskEl=$('#desk');let lp,lx,ly;
+deskEl.addEventListener('contextmenu',e=>{if(e.target===deskEl||e.target===deskIcons){e.preventDefault();setEdit(true)}});
+deskEl.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||(e.target!==deskEl&&e.target!==deskIcons))return;lx=e.clientX;ly=e.clientY;clearTimeout(lp);lp=setTimeout(()=>setEdit(true),700)});
+deskEl.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-lx,e.clientY-ly)>10)clearTimeout(lp)});
+['pointerup','pointercancel'].forEach(t=>deskEl.addEventListener(t,()=>clearTimeout(lp)));
+addEventListener('keydown',e=>{if(e.key==='Escape'&&editing)setEdit(false)});$('#desk').append(deskIcons);
+function addEntry(k,a){
+ const b=document.createElement('button');b.className='ico';b.innerHTML=`<i>${a.ic}</i>${k}`;b.ondblclick=()=>{if(!editing)openApp(k)};b.onkeydown=e=>{if(e.key==='Enter'&&!editing)openApp(k)};
+ b.onclick=e=>{if(!editing&&matchMedia('(pointer:coarse)').matches)openApp(k)};deskIcons.append(b);dragify(b,k);layoutIcon(b,k);
+ const m=document.createElement('button');m.innerHTML=`<span>${a.ic}</span>${k}`;m.onclick=()=>openApp(k);$('#menu').append(m);a.els=[b,m]}
+Object.entries(apps).forEach(([k,a])=>addEntry(k,a));
+$('#start').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('open')};
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#menu,#start'))$('#menu').classList.remove('open')});
+function tick(){const d=new Date();$('#clock').innerHTML=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'<br>'+d.toLocaleDateString([],{day:'numeric',month:'short'})}
+const webList=()=>{try{const l=JSON.parse(store.get('tide.web','[]'));return Array.isArray(l)?l:[]}catch(e){return[]}};
+function webApp(it){return{ic:it.ic,w:680,h:460,web:1,mk(b){
+ const bar=document.createElement('div');bar.className='wb';
+ const s=document.createElement('span');s.textContent=it.url+'. If the page stays blank, the site blocks embedding.';
+ const a=document.createElement('a');a.href=it.url;a.target='_blank';a.rel='noopener';a.textContent='Open in new tab';
+ const f=document.createElement('iframe');f.className='wf';f.src=it.url;f.title=it.name;f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-modals');
+ bar.append(s,a);b.append(bar,f)}}}
+function addWeb(it,save=true){
+ it.name=(it.name||'').replace(/[<>&"]/g,'').trim();it.ic=((it.ic||'🌐').replace(/[<>&"]/g,'').trim()||'🌐');
+ if(!it.name)return 'Enter a name.';
+ let u=(it.url||'').trim();if(!/^https?:\/\//i.test(u))u='https://'+u;
+ try{const p=new URL(u);if(!/^https?:$/.test(p.protocol)||!p.hostname.includes('.'))throw 0;it.url=p.href}catch(e){return 'Enter a valid web address.'}
+ if(apps[it.name])return '"'+it.name+'" is already taken. Pick another name.';
+ apps[it.name]=webApp(it);addEntry(it.name,apps[it.name]);
+ if(save){const l=webList();l.push({name:it.name,url:it.url,ic:it.ic});store.set('tide.web',JSON.stringify(l))}
+ return ''}
+function removeWeb(name){const a=apps[name];if(!a||!a.web)return;a.els.forEach(e=>e.remove());delete apps[name];store.set('tide.web',JSON.stringify(webList().filter(x=>x.name!==name)))}
+webList().forEach(it=>addWeb(it,false));
+tick();setInterval(tick,15000);
+try{setWall(JSON.parse(store.get('tide.wp','')))}catch(e){const sw=store.get('tide.wall','Lagoon');setWall({t:'p',k:walls[sw]?sw:'Lagoon'})}applyTheme(store.get('tide.theme','auto'));
+openApp('Terminal');
+</script>
+</body>
+</html>
