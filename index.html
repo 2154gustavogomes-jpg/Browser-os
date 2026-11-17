@@ -124,14 +124,19 @@ Settings:{ic:'⚙',w:380,h:480,mk(b){
  $('.gr',d).onclick=()=>{setWall({t:'g',a:$('.c1',d).value,b:$('.c2',d).value});wm.textContent='Gradient applied.'};
  $('.eh',d).onclick=()=>setEdit(true);
  ['auto','light','dark'].forEach(t=>{const e=document.createElement('button');e.className='pill';e.textContent=t[0].toUpperCase()+t.slice(1);e.onclick=()=>applyTheme(t);$('.th',d).append(e)})}},
-'Web Apps':{ic:'⊕',w:380,h:500,mk(b){
+'Web Apps':{ic:'⊕',w:380,h:600,mk(b){
  const d=document.createElement('div');d.className='set';
- d.innerHTML='<div><b>Add a web app</b></div><input class="f n" placeholder="Name, e.g. Excalidraw" aria-label="Name"><input class="f u" placeholder="Address, e.g. excalidraw.com" aria-label="Address"><input class="f i" placeholder="Icon (optional emoji)" maxlength="4" aria-label="Icon"><div class="sw"><button class="pill add">Add app</button></div><div class="msg" role="status"></div><div><b>Your web apps</b></div><div class="list"></div><div><b>Suggestions</b></div><div class="sw sug"></div>';
+ d.innerHTML='<div><b>Add a web app</b></div><input class="f n" placeholder="Name, e.g. Excalidraw" aria-label="Name"><input class="f u" placeholder="Address, e.g. excalidraw.com" aria-label="Address"><input class="f i" placeholder="Icon (optional emoji)" maxlength="4" aria-label="Icon"><div class="sw"><button class="pill add">Add app</button></div><div><b>Or paste embed code</b></div><textarea class="f em" rows="4" placeholder="Paste an &lt;iframe&gt; embed code or HTML" aria-label="Embed code"></textarea><div class="sw"><button class="pill addem">Add embed</button></div><div class="msg" role="status"></div><div><b>Your web apps</b></div><div class="list"></div><div><b>Suggestions</b></div><div class="sw sug"></div>';
  b.append(d);
  const q=s=>$(s,d),list=q('.list');
  const render=()=>{list.innerHTML='';const l=webList();if(!l.length)list.textContent='None yet. Add one above.';l.forEach(it=>{const r=document.createElement('div');r.className='row';const s=document.createElement('span');s.textContent=it.ic+' '+it.name;const o=document.createElement('button');o.textContent='Open';o.onclick=()=>openApp(it.name);const x=document.createElement('button');x.textContent='Remove';x.onclick=()=>{removeWeb(it.name);render()};r.append(s,o,x);list.append(r)})};
  const add=(name,url,ic)=>{const m=addWeb({name,url,ic});q('.msg').textContent=m||'Added '+name+'. It is on your desktop and in the Tide menu.';if(!m){render();['.n','.u','.i'].forEach(c=>q(c).value='')}};
  q('.add').onclick=()=>add(q('.n').value,q('.u').value,q('.i').value);
+ q('.addem').onclick=()=>{const code=q('.em').value.trim();if(!code){q('.msg').textContent='Paste some embed code first.';return}
+  const fr=new DOMParser().parseFromString(code,'text/html').querySelector('iframe');let o;
+  if(fr&&fr.getAttribute('src'))o={name:q('.n').value||fr.getAttribute('title')||'Embed',url:fr.getAttribute('src').replace(/^\/\//,'https://'),ic:q('.i').value,allow:fr.getAttribute('allow')||''};
+  else o={name:q('.n').value||'Embed',html:code,ic:q('.i').value};
+  const m=addWeb(o);q('.msg').textContent=m||'Added '+o.name+'. It is on your desktop and in the Tide menu.';if(!m){render();['.n','.u','.i','.em'].forEach(c=>q(c).value='')}};
  [['Excalidraw','excalidraw.com','✏'],['OpenStreetMap','openstreetmap.org','🗺'],['Wikipedia','en.m.wikipedia.org','📖']].forEach(([n,u,i])=>{const e=document.createElement('button');e.className='pill';e.textContent=i+' '+n;e.onclick=()=>add(n,u,i);q('.sug').append(e)});
  render()}}
 };
@@ -210,18 +215,19 @@ function tick(){const d=new Date();$('#clock').innerHTML=d.toLocaleTimeString([]
 const webList=()=>{try{const l=JSON.parse(store.get('tide.web','[]'));return Array.isArray(l)?l:[]}catch(e){return[]}};
 function webApp(it){return{ic:it.ic,w:680,h:460,web:1,mk(b){
  const bar=document.createElement('div');bar.className='wb';
- const s=document.createElement('span');s.textContent=it.url+'. If the page stays blank, the site blocks embedding.';
- const a=document.createElement('a');a.href=it.url;a.target='_blank';a.rel='noopener';a.textContent='Open in new tab';
- const f=document.createElement('iframe');f.className='wf';f.src=it.url;f.title=it.name;f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-modals');
+ const s=document.createElement('span');s.textContent=it.html?'Embedded HTML, running in a sandbox.':it.url+'. If the page stays blank, the site blocks embedding.';
+ const a=document.createElement('a');if(it.url&&!it.html){a.href=it.url;a.target='_blank';a.rel='noopener';a.textContent='Open in new tab'}
+ const f=document.createElement('iframe');f.className='wf';f.title=it.name;if(it.allow)f.allow=it.allow;f.allowFullscreen=true;
+ if(it.html){f.srcdoc=it.html;f.setAttribute('sandbox','allow-scripts allow-forms allow-popups allow-modals')}else{f.src=it.url;f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-modals')}
  bar.append(s,a);b.append(bar,f)}}}
 function addWeb(it,save=true){
  it.name=(it.name||'').replace(/[<>&"]/g,'').trim();it.ic=((it.ic||'🌐').replace(/[<>&"]/g,'').trim()||'🌐');
  if(!it.name)return 'Enter a name.';
- let u=(it.url||'').trim();if(!/^https?:\/\//i.test(u))u='https://'+u;
+ let u=it.html?'https://embedded.invalid':(it.url||'').trim();if(!/^https?:\/\//i.test(u))u='https://'+u;
  try{const p=new URL(u);if(!/^https?:$/.test(p.protocol)||!p.hostname.includes('.'))throw 0;it.url=p.href}catch(e){return 'Enter a valid web address.'}
  if(apps[it.name])return '"'+it.name+'" is already taken. Pick another name.';
  apps[it.name]=webApp(it);addEntry(it.name,apps[it.name]);
- if(save){const l=webList();l.push({name:it.name,url:it.url,ic:it.ic});store.set('tide.web',JSON.stringify(l))}
+ if(save){const l=webList();l.push(it.html?{name:it.name,html:it.html,ic:it.ic}:{name:it.name,url:it.url,ic:it.ic,allow:it.allow||''});store.set('tide.web',JSON.stringify(l))}
  return ''}
 function removeWeb(name){const a=apps[name];if(!a||!a.web)return;a.els.forEach(e=>e.remove());delete apps[name];store.set('tide.web',JSON.stringify(webList().filter(x=>x.name!==name)))}
 webList().forEach(it=>addWeb(it,false));
